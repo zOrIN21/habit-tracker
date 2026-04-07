@@ -8,7 +8,7 @@ const saved = localStorage.getItem("tasks");
 if (saved) {
     tasks = JSON.parse(saved);
     tasks.forEach((task) => {
-        addTaskToDom(task.text, task.done);
+        addTaskToDom(task);
     })
 }
 
@@ -33,41 +33,60 @@ form.addEventListener("submit", (e) => {
     tasks.push(task);
     saveTasks();
 
-    addTaskToDom(task.text, task.done);
+    addTaskToDom(task);
     input.value = '';
 
 });
 
-function addTaskToDom(text, done = false) {
-    const li = document.createElement('li');
-    li.className = 'task-item';
+function addTaskToDom(task) {
+  const li = document.createElement('li');
+  li.className = 'task-item';
+  li.dataset.id = task.id; // привязываем DOM к task по id [web:331]
 
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.checked = task.done;
 
-    const span = document.createElement('span');
-    span.className = 'task-item__text';
-    span.textContent = text;
+  const span = document.createElement('span');
+  span.className = 'task-item__text';
+  span.textContent = task.text;
 
-    if(done) {
-        span.classList.add("task-item__text--done");
+  if (task.done) {
+    span.classList.add('task-item__text--done');
+  }
+
+  const deleteButton = document.createElement('button');
+  deleteButton.className = 'task-item__delete';
+  deleteButton.textContent = '×';
+
+  checkbox.addEventListener('change', () => {
+    span.classList.toggle('task-item__text--done', checkbox.checked);
+
+    // находим задачу в массиве по id
+    const currentId = Number(li.dataset.id);
+    const currentTask = tasks.find(t => t.id === currentId);
+    if (!currentTask) return;
+
+    currentTask.done = checkbox.checked; // обновили в массиве
+    saveTasks();                         // сохранили в localStorage [web:298][web:326]
+  });
+
+  deleteButton.addEventListener('click', () => {
+    const currentId = Number(li.dataset.id);
+
+    // удаляем из массива по id
+    const index = tasks.findIndex(t => t.id === currentId);
+    if (index !== -1) {
+      tasks.splice(index, 1);            // выкинули из массива [web:329]
+      saveTasks();                       // пересохранили [web:298][web:326]
     }
 
-    const deleteButton = document.createElement('button');
-    deleteButton.className = 'task-item__delete';
-    deleteButton.textContent = '×';
+    li.remove();
+  });
 
-    checkbox.addEventListener('change', () => {
-        span.classList.toggle('task-item__text--done', checkbox.checked);
-    });
+  li.appendChild(checkbox);
+  li.appendChild(span);
+  li.appendChild(deleteButton);
 
-    deleteButton.addEventListener('click', () => {
-        li.remove();
-    });
-
-    li.appendChild(checkbox);
-    li.appendChild(span);
-    li.appendChild(deleteButton);
-
-    list.appendChild(li);
+  list.appendChild(li);
 };
